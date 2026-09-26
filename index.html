@@ -1,0 +1,2249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Unseen | Human Activity Monitor</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root{
+  --slate:#4F464A;
+  --pebble:#9B8E89;
+  --wool:#C5BCAA;
+  --peanut:#B99D87;
+  --cream:#F2EEE5;
+  --cotton:#F5F5F0;
+  --black:#0b0a09;
+  --black-soft:#12100f;
+  --panel:rgba(79,70,74,.76);
+  --border:rgba(197,188,170,.20);
+  --border-bright:rgba(242,238,229,.35);
+}
+
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+html{
+  scroll-behavior:smooth;
+}
+
+body{
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,
+  BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:var(--black);
+  color:var(--cream);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* =========================================================
+   LIQUID BARS BACKGROUND
+========================================================= */
+
+#liquidBarsCanvas{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  z-index:0;
+  pointer-events:none;
+  opacity:.58;
+}
+
+#backgroundShade{
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(11,10,9,.02),
+      rgba(11,10,9,.30) 70%,
+      rgba(11,10,9,.58)
+    );
+  z-index:0;
+  pointer-events:none;
+}
+
+/* =========================================================
+   MAGIC RINGS INTRO
+========================================================= */
+
+#introScreen{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  background:#080706;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  transition:opacity .8s ease,visibility .8s ease;
+}
+
+#introScreen.hide{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+
+#magicRingsCanvas{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+}
+
+.intro-vignette{
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(
+      circle at center,
+      transparent 25%,
+      rgba(0,0,0,.55) 100%
+    );
+}
+
+.intro-content{
+  position:relative;
+  z-index:2;
+  text-align:center;
+  padding:24px;
+}
+
+.intro-kicker{
+  font-size:11px;
+  letter-spacing:5px;
+  text-transform:uppercase;
+  color:var(--pebble);
+  margin-bottom:18px;
+}
+
+.intro-title{
+  font-size:clamp(32px,7vw,92px);
+  font-weight:800;
+  letter-spacing:.07em;
+  color:var(--cotton);
+  line-height:.95;
+}
+
+.intro-project{
+  font-size:clamp(22px,3vw,40px);
+  letter-spacing:.28em;
+  text-transform:uppercase;
+  color:var(--peanut);
+  margin-top:20px;
+}
+
+.intro-team{
+  margin-top:14px;
+  color:var(--pebble);
+  font-size:12px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+}
+
+.intro-line{
+  width:90px;
+  height:1px;
+  background:var(--peanut);
+  margin:24px auto 0;
+  opacity:.8;
+}
+
+/* =========================================================
+   PAGE
+========================================================= */
+
+.page-shell{
+  position:relative;
+  z-index:1;
+  width:min(1380px,calc(100% - 40px));
+  margin:0 auto;
+  padding:30px 0 50px;
+}
+
+/* =========================================================
+   HEADER + CIRCULAR TEXT
+========================================================= */
+
+header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  min-height:125px;
+}
+
+.circular-brand{
+  --circle-radius:50px;
+  width:118px;
+  height:118px;
+  position:relative;
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.circular-spinner{
+  position:absolute;
+  inset:0;
+  animation:circularRotate 18s linear infinite;
+  transform-origin:center;
+  will-change:transform;
+}
+
+@keyframes circularRotate{
+  to{
+    transform:rotate(360deg);
+  }
+}
+
+.circular-letter{
+  position:absolute;
+  left:50%;
+  top:50%;
+  font-size:8px;
+  font-weight:700;
+  letter-spacing:1.4px;
+  color:var(--cotton);
+  white-space:nowrap;
+  transform:
+    rotate(var(--angle))
+    translateY(calc(-1 * var(--circle-radius)))
+    rotate(calc(var(--angle) * -1));
+  transform-origin:center;
+  opacity:.9;
+}
+
+.circular-center{
+  position:relative;
+  z-index:2;
+  width:47px;
+  height:47px;
+  border:1px solid var(--border-bright);
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  font-size:7px;
+  letter-spacing:1.5px;
+  color:var(--cotton);
+  background:rgba(11,10,9,.65);
+  box-shadow:
+    0 0 25px rgba(197,188,170,.08);
+}
+
+.header-brand{
+  text-align:right;
+}
+
+.header-brand h2{
+  font-size:22px;
+  letter-spacing:4px;
+  font-weight:700;
+  color:var(--cotton);
+}
+
+.header-brand p{
+  margin-top:7px;
+  color:var(--pebble);
+  font-size:10px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+}
+
+.header-brand .online{
+  display:inline-block;
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:var(--cotton);
+  margin-right:8px;
+  box-shadow:0 0 12px rgba(245,245,240,.55);
+}
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.hero{
+  text-align:center;
+  padding:28px 20px;
+}
+
+.particle-title-wrap{
+  height:clamp(130px,15vw,205px);
+  width:100%;
+  max-width:1160px;
+  margin:0 auto;
+  overflow:visible;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 35px;
+}
+
+#particleTextCanvas{
+  display:block;
+  width:100%;
+  height:100%;
+  max-width:1100px;
+  overflow:visible;
+}
+
+.hero-subtitle{
+  max-width:760px;
+  margin:0 auto;
+  color:rgba(242,238,229,.72);
+  font-size:14px;
+  line-height:1.7;
+}
+
+/* =========================================================
+   MONITOR PANEL
+========================================================= */
+
+.monitor-panel{
+  background:rgba(79,70,74,.79);
+  border:1px solid var(--border);
+  border-radius:24px;
+  padding:30px;
+  margin-top:18px;
+  backdrop-filter:blur(8px);
+  box-shadow:0 20px 70px rgba(0,0,0,.24);
+}
+
+.panel-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:24px;
+  color:var(--pebble);
+  font-size:11px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+}
+
+.monitoring-dot{
+  display:inline-block;
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:var(--cotton);
+  margin-right:8px;
+  box-shadow:0 0 10px rgba(245,245,240,.4);
+}
+
+.status-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:20px;
+}
+
+.depth-card{
+  position:relative;
+  min-height:205px;
+  padding:25px;
+  border-radius:17px;
+  border:1px solid rgba(242,238,229,.18);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.07),
+      rgba(0,0,0,.10)
+    );
+  overflow:hidden;
+  transform-style:preserve-3d;
+  transition:
+    transform .18s ease,
+    border-color .2s ease;
+  will-change:transform;
+}
+
+.depth-card::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(
+      circle at var(--mx,50%) var(--my,50%),
+      rgba(245,245,240,.13),
+      transparent 35%
+    );
+  pointer-events:none;
+}
+
+.depth-card:hover{
+  border-color:rgba(242,238,229,.34);
+}
+
+.card-label{
+  font-size:10px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  color:var(--pebble);
+  margin-bottom:23px;
+}
+
+.card-value{
+  font-size:42px;
+  line-height:1;
+  font-weight:700;
+  color:var(--cotton);
+  letter-spacing:-1.5px;
+}
+
+.card-description{
+  margin-top:15px;
+  font-size:12px;
+  line-height:1.55;
+  color:rgba(242,238,229,.58);
+  max-width:75%;
+}
+
+.card-orbit{
+  position:absolute;
+  right:28px;
+  bottom:25px;
+  width:78px;
+  height:78px;
+  border:1px solid rgba(197,188,170,.16);
+  border-radius:50%;
+}
+
+.card-orbit::before,
+.card-orbit::after{
+  content:"";
+  position:absolute;
+  inset:13px;
+  border:1px solid rgba(197,188,170,.13);
+  border-radius:50%;
+}
+
+.card-orbit::after{
+  inset:29px;
+  background:var(--peanut);
+  box-shadow:0 0 20px rgba(185,157,135,.35);
+  border:0;
+}
+
+.activity-mark{
+  position:absolute;
+  right:27px;
+  bottom:24px;
+  width:78px;
+  height:78px;
+  border:1px solid var(--peanut);
+  border-radius:12px;
+  display:grid;
+  place-items:center;
+  color:var(--peanut);
+  font-size:33px;
+}
+
+.conf-bars{
+  position:absolute;
+  right:28px;
+  bottom:25px;
+  height:78px;
+  display:flex;
+  align-items:end;
+  gap:6px;
+}
+
+.conf-bars span{
+  display:block;
+  width:8px;
+  background:var(--peanut);
+  border-radius:3px 3px 0 0;
+  opacity:.8;
+}
+
+.conf-bars span:nth-child(1){height:25px}
+.conf-bars span:nth-child(2){height:38px}
+.conf-bars span:nth-child(3){height:53px}
+.conf-bars span:nth-child(4){height:70px}
+
+/* =========================================================
+   MONITORING SCENARIO
+========================================================= */
+
+.scenario-panel{
+  margin-top:20px;
+  padding:24px 26px;
+  border:1px solid var(--border);
+  border-radius:20px;
+  background:rgba(79,70,74,.64);
+  backdrop-filter:blur(8px);
+
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:24px;
+  align-items:center;
+}
+
+.scenario-label{
+  color:var(--pebble);
+  font-size:10px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+}
+
+.scenario-title{
+  margin-top:8px;
+  color:var(--cotton);
+  font-size:20px;
+  font-weight:600;
+}
+
+.scenario-description{
+  margin-top:7px;
+  color:rgba(242,238,229,.58);
+  font-size:12px;
+  line-height:1.55;
+  max-width:620px;
+}
+
+.scenario-options{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  justify-content:flex-end;
+}
+
+.scenario-option{
+  border:1px solid var(--border);
+  background:rgba(11,10,9,.42);
+  color:var(--pebble);
+  padding:10px 13px;
+  border-radius:999px;
+  font-size:9px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  cursor:pointer;
+  transition:.2s ease;
+}
+
+.scenario-option:hover,
+.scenario-option.active{
+  color:var(--cream);
+  border-color:var(--border-bright);
+  background:rgba(197,188,170,.10);
+}
+
+/* =========================================================
+   CHART
+========================================================= */
+
+.chart-card{
+  margin-top:20px;
+  padding:26px;
+  border:1px solid var(--border);
+  border-radius:20px;
+  background:rgba(18,16,15,.76);
+  backdrop-filter:blur(8px);
+}
+
+.chart-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:16px;
+}
+
+.chart-title{
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:3px;
+  color:var(--cotton);
+}
+
+.signal-live{
+  font-size:10px;
+  color:var(--pebble);
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+}
+
+.signal-dot{
+  display:inline-block;
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--peanut);
+  margin-right:7px;
+}
+
+.chart-wrapper{
+  height:270px;
+}
+
+.chart-wrapper canvas{
+  width:100%!important;
+  height:100%!important;
+}
+
+/* =========================================================
+   BOTTOM
+========================================================= */
+
+.bottom-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+  margin-top:20px;
+}
+
+.info-card{
+  padding:25px;
+  border:1px solid var(--border);
+  border-radius:18px;
+  background:rgba(79,70,74,.64);
+  backdrop-filter:blur(8px);
+}
+
+.info-title{
+  font-size:10px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  color:var(--pebble);
+  margin-bottom:18px;
+}
+
+.privacy-list{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.privacy-item{
+  color:rgba(242,238,229,.72);
+  font-size:13px;
+}
+
+.check{
+  color:var(--peanut);
+  margin-right:9px;
+}
+
+footer{
+  text-align:center;
+  color:rgba(155,142,137,.72);
+  font-size:10px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  margin-top:28px;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media(max-width:850px){
+
+  .status-grid{
+    grid-template-columns:1fr;
+  }
+
+  .bottom-grid{
+    grid-template-columns:1fr;
+  }
+
+  .scenario-panel{
+    grid-template-columns:1fr;
+  }
+
+  .scenario-options{
+    justify-content:flex-start;
+  }
+
+  .page-shell{
+    width:min(100% - 24px,1380px);
+  }
+
+  .particle-title-wrap{
+    padding:0 15px;
+  }
+
+  .card-value{
+    font-size:36px;
+  }
+}
+
+@media(max-width:680px){
+
+  header{
+    min-height:100px;
+  }
+
+  .circular-brand{
+    --circle-radius:38px;
+    width:88px;
+    height:88px;
+  }
+
+  .circular-letter{
+    font-size:6.5px;
+  }
+
+  .circular-center{
+    width:38px;
+    height:38px;
+    font-size:6px;
+  }
+
+  .header-brand h2{
+    font-size:17px;
+    letter-spacing:3px;
+  }
+
+  .header-brand p{
+    font-size:8px;
+  }
+
+  .particle-title-wrap{
+    height:125px;
+    padding:0 5px;
+  }
+
+  .hero{
+    padding-top:15px;
+  }
+
+  .hero-subtitle{
+    font-size:12px;
+  }
+
+  .monitor-panel{
+    padding:18px;
+  }
+
+  .depth-card{
+    min-height:180px;
+    padding:20px;
+  }
+
+  .chart-wrapper{
+    height:220px;
+  }
+
+  .scenario-panel{
+    padding:20px;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+
+  .circular-spinner{
+    animation-duration:60s;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- =========================================================
+     BACKGROUND
+========================================================= -->
+
+<canvas id="liquidBarsCanvas"></canvas>
+<div id="backgroundShade"></div>
+
+<!-- =========================================================
+     MAGIC RINGS INTRO
+========================================================= -->
+
+<div id="introScreen">
+
+  <canvas id="magicRingsCanvas"></canvas>
+
+  <div class="intro-vignette"></div>
+
+  <div class="intro-content">
+
+    <div class="intro-kicker">
+      Human Activity Monitor
+    </div>
+
+    <div class="intro-title">
+      HUMAN ACTIVITY MONITOR
+    </div>
+
+    <div class="intro-project">
+      Unseen
+    </div>
+
+    <div class="intro-team">
+      Pretty Little Hackers
+    </div>
+
+    <div class="intro-line"></div>
+
+  </div>
+
+</div>
+
+<!-- =========================================================
+     MAIN PAGE
+========================================================= -->
+
+<div class="page-shell">
+
+<header>
+
+  <div class="circular-brand">
+
+    <div
+      class="circular-spinner"
+      id="circularSpinner">
+    </div>
+
+    <div class="circular-center">
+      UNSEEN
+    </div>
+
+  </div>
+
+  <div class="header-brand">
+
+    <h2>
+      UNSEEN
+    </h2>
+
+    <p>
+      <span class="online"></span>
+      SYSTEM ONLINE
+    </p>
+
+  </div>
+
+</header>
+
+<main>
+
+<!-- =========================================================
+     HERO
+========================================================= -->
+
+<section class="hero">
+
+  <div class="particle-title-wrap">
+
+    <canvas id="particleTextCanvas"></canvas>
+
+  </div>
+
+  <p class="hero-subtitle">
+    Detecting presence and activity through changes in WiFi
+    Channel State Information — without cameras, wearables,
+    or physical contact.
+  </p>
+
+</section>
+
+<!-- =========================================================
+     MONITOR
+========================================================= -->
+
+<section class="monitor-panel">
+
+  <div class="panel-top">
+
+    <span>
+      Live Human Sensing
+    </span>
+
+    <span>
+      <i class="monitoring-dot"></i>
+      Monitoring
+    </span>
+
+  </div>
+
+  <div class="status-grid">
+
+    <!-- PRESENCE -->
+
+    <article
+      class="depth-card"
+      data-depth>
+
+      <div class="card-label">
+        Presence
+      </div>
+
+      <div
+        id="presenceValue"
+        class="card-value">
+        Detected
+      </div>
+
+      <div
+        id="presenceDescription"
+        class="card-description">
+        Human presence detected in sensing area.
+      </div>
+
+      <div class="card-orbit"></div>
+
+    </article>
+
+    <!-- ACTIVITY -->
+
+    <article
+      class="depth-card"
+      data-depth>
+
+      <div class="card-label">
+        Activity
+      </div>
+
+      <div
+        id="activityValue"
+        class="card-value">
+        Waiting...
+      </div>
+
+      <div class="card-description">
+        Estimated human motion state.
+      </div>
+
+      <div class="activity-mark">
+        ♿
+      </div>
+
+    </article>
+
+    <!-- CONFIDENCE -->
+
+    <article
+      class="depth-card"
+      data-depth>
+
+      <div class="card-label">
+        Confidence
+      </div>
+
+      <div
+        id="confidenceValue"
+        class="card-value">
+        94%
+      </div>
+
+      <div class="card-description">
+        Model confidence for current prediction.
+      </div>
+
+      <div class="conf-bars">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
+    </article>
+
+  </div>
+
+</section>
+
+<!-- =========================================================
+     MONITORING SCENARIO
+========================================================= -->
+
+<section class="scenario-panel">
+
+  <div>
+
+    <div class="scenario-label">
+      Monitoring Scenario
+    </div>
+
+    <div
+      id="scenarioTitle"
+      class="scenario-title">
+      General Monitoring
+    </div>
+
+    <div
+      id="scenarioDescription"
+      class="scenario-description">
+      General-purpose presence and activity monitoring
+      using WiFi CSI.
+    </div>
+
+  </div>
+
+  <div class="scenario-options">
+
+    <button
+      class="scenario-option active"
+      data-scenario="general">
+      General Monitoring
+    </button>
+
+    <button
+      class="scenario-option"
+      data-scenario="presence">
+      Presence Detection
+    </button>
+
+    <button
+      class="scenario-option"
+      data-scenario="activity">
+      Activity Monitoring
+    </button>
+
+    <button
+      class="scenario-option"
+      data-scenario="demo">
+      Demo / Replay
+    </button>
+
+  </div>
+
+</section>
+
+<!-- =========================================================
+     CSI CHART
+========================================================= -->
+
+<section class="chart-card">
+
+  <div class="chart-header">
+
+    <div class="chart-title">
+      Live Motion Score
+    </div>
+
+    <div class="signal-live">
+
+      <span class="signal-dot"></span>
+
+      Receiving signal
+
+    </div>
+
+  </div>
+
+  <div class="chart-wrapper">
+
+    <canvas id="csiChart"></canvas>
+
+  </div>
+
+</section>
+
+<!-- =========================================================
+     BOTTOM
+========================================================= -->
+
+<section class="bottom-grid">
+
+  <div class="info-card">
+
+    <div class="info-title">
+      Scenario Info
+    </div>
+
+    <div class="privacy-list">
+
+      <div class="privacy-item">
+        <span class="check">✓</span>
+        WiFi CSI based sensing
+      </div>
+
+      <div class="privacy-item">
+        <span class="check">✓</span>
+        No camera required
+      </div>
+
+      <div class="privacy-item">
+        <span class="check">✓</span>
+        Real-time activity estimation
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="info-card">
+
+    <div class="info-title">
+      Privacy &amp; System
+    </div>
+
+    <div class="privacy-list">
+
+      <div class="privacy-item">
+        <span class="check">✓</span>
+        No camera required
+      </div>
+
+      <div class="privacy-item">
+        <span class="check">✓</span>
+        WiFi-based sensing
+      </div>
+
+      <div class="privacy-item">
+        <span class="check">✓</span>
+        Privacy-preserving monitoring
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+</main>
+
+<footer>
+  UNSEEN • WiFi CSI Human Sensing Prototype
+</footer>
+
+</div>
+
+<script>
+
+/* =========================================================
+   LIQUID BARS BACKGROUND
+========================================================= */
+
+const liquidCanvas =
+  document.getElementById("liquidBarsCanvas");
+
+const liquidCtx =
+  liquidCanvas.getContext("2d");
+
+let liquidW = 0;
+let liquidH = 0;
+let liquidDpr = 1;
+
+function resizeLiquidBars(){
+
+  liquidDpr =
+    Math.min(window.devicePixelRatio || 1, 1.5);
+
+  liquidW = window.innerWidth;
+  liquidH = window.innerHeight;
+
+  liquidCanvas.width =
+    liquidW * liquidDpr;
+
+  liquidCanvas.height =
+    liquidH * liquidDpr;
+
+  liquidCanvas.style.width =
+    liquidW + "px";
+
+  liquidCanvas.style.height =
+    liquidH + "px";
+
+  liquidCtx.setTransform(
+    liquidDpr,
+    0,
+    0,
+    liquidDpr,
+    0,
+    0
+  );
+}
+
+function drawLiquidBars(time){
+
+  liquidCtx.clearRect(
+    0,
+    0,
+    liquidW,
+    liquidH
+  );
+
+  const barCount = 7;
+
+  const gap =
+    Math.max(18, liquidW * .018);
+
+  const totalGap =
+    gap * (barCount - 1);
+
+  const barWidth =
+    Math.max(
+      30,
+      (liquidW - totalGap) / barCount * .68
+    );
+
+  const totalWidth =
+    barCount * barWidth +
+    totalGap;
+
+  const startX =
+    (liquidW - totalWidth) / 2;
+
+  const t = time * 0.00045;
+
+  for(let i = 0; i < barCount; i++){
+
+    const x =
+      startX +
+      i * (barWidth + gap);
+
+    liquidCtx.save();
+
+    liquidCtx.beginPath();
+
+    const points = 40;
+
+    for(let j = 0; j <= points; j++){
+
+      const y =
+        (liquidH / points) * j;
+
+      const wave =
+        Math.sin(
+          y * .012 +
+          t * 2 +
+          i * .8
+        ) * 7;
+
+      const xPos =
+        x + wave;
+
+      if(j === 0){
+        liquidCtx.moveTo(
+          xPos,
+          y
+        );
+      }else{
+        liquidCtx.lineTo(
+          xPos,
+          y
+        );
+      }
+    }
+
+    for(let j = points; j >= 0; j--){
+
+      const y =
+        (liquidH / points) * j;
+
+      const wave =
+        Math.sin(
+          y * .012 +
+          t * 2 +
+          i * .8 +
+          1.8
+        ) * 7;
+
+      const xPos =
+        x +
+        barWidth +
+        wave;
+
+      liquidCtx.lineTo(
+        xPos,
+        y
+      );
+    }
+
+    liquidCtx.closePath();
+
+    liquidCtx.clip();
+
+    /* Base metallic gradient */
+
+    const gradient =
+      liquidCtx.createLinearGradient(
+        x,
+        0,
+        x + barWidth,
+        0
+      );
+
+    gradient.addColorStop(
+      0,
+      "rgba(79,70,74,.08)"
+    );
+
+    gradient.addColorStop(
+      .18,
+      "rgba(155,142,137,.18)"
+    );
+
+    gradient.addColorStop(
+      .40,
+      "rgba(197,188,170,.28)"
+    );
+
+    gradient.addColorStop(
+      .50,
+      "rgba(245,245,240,.20)"
+    );
+
+    gradient.addColorStop(
+      .62,
+      "rgba(197,188,170,.25)"
+    );
+
+    gradient.addColorStop(
+      .82,
+      "rgba(155,142,137,.14)"
+    );
+
+    gradient.addColorStop(
+      1,
+      "rgba(79,70,74,.05)"
+    );
+
+    liquidCtx.fillStyle =
+      gradient;
+
+    liquidCtx.fillRect(
+      x - 15,
+      0,
+      barWidth + 30,
+      liquidH
+    );
+
+    /* Moving liquid highlights */
+
+    for(let s = 0; s < 5; s++){
+
+      const streakY =
+        (
+          (
+            t * 170 +
+            s * 160 +
+            i * 85
+          ) % (liquidH + 300)
+        ) - 150;
+
+      const streak =
+        liquidCtx.createLinearGradient(
+          x,
+          streakY - 60,
+          x,
+          streakY + 60
+        );
+
+      streak.addColorStop(
+        0,
+        "rgba(245,245,240,0)"
+      );
+
+      streak.addColorStop(
+        .5,
+        "rgba(245,245,240,.10)"
+      );
+
+      streak.addColorStop(
+        1,
+        "rgba(245,245,240,0)"
+      );
+
+      liquidCtx.fillStyle =
+        streak;
+
+      liquidCtx.fillRect(
+        x - 20,
+        streakY - 70,
+        barWidth + 40,
+        140
+      );
+    }
+
+    liquidCtx.restore();
+  }
+
+  requestAnimationFrame(drawLiquidBars);
+}
+
+resizeLiquidBars();
+
+window.addEventListener(
+  "resize",
+  resizeLiquidBars
+);
+
+requestAnimationFrame(
+  drawLiquidBars
+);
+
+
+/* =========================================================
+   MAGIC RINGS INTRO
+========================================================= */
+
+const intro =
+  document.getElementById("introScreen");
+
+const ringCanvas =
+  document.getElementById("magicRingsCanvas");
+
+const ringCtx =
+  ringCanvas.getContext("2d");
+
+let ringW = 0;
+let ringH = 0;
+let ringDpr = 1;
+let ringStart = performance.now();
+
+function resizeRings(){
+
+  ringDpr =
+    Math.min(
+      window.devicePixelRatio || 1,
+      2
+    );
+
+  ringW =
+    window.innerWidth;
+
+  ringH =
+    window.innerHeight;
+
+  ringCanvas.width =
+    ringW * ringDpr;
+
+  ringCanvas.height =
+    ringH * ringDpr;
+
+  ringCanvas.style.width =
+    ringW + "px";
+
+  ringCanvas.style.height =
+    ringH + "px";
+
+  ringCtx.setTransform(
+    ringDpr,
+    0,
+    0,
+    ringDpr,
+    0,
+    0
+  );
+}
+
+function drawRings(time){
+
+  ringCtx.clearRect(
+    0,
+    0,
+    ringW,
+    ringH
+  );
+
+  const cx =
+    ringW / 2;
+
+  const cy =
+    ringH / 2;
+
+  const base =
+    Math.min(
+      ringW,
+      ringH
+    ) * .12;
+
+  for(let i = 0; i < 7; i++){
+
+    const phase =
+      (
+        (time - ringStart) /
+        1000 *
+        .16 +
+        i * .15
+      ) % 1;
+
+    const r =
+      base +
+      i *
+      Math.min(ringW,ringH) *
+      .055 +
+      phase *
+      Math.min(ringW,ringH) *
+      .09;
+
+    const alpha =
+      (1 - phase) * .34;
+
+    ringCtx.beginPath();
+
+    ringCtx.arc(
+      cx,
+      cy,
+      r,
+      0,
+      Math.PI * 2
+    );
+
+    ringCtx.strokeStyle =
+      `rgba(197,188,170,${alpha})`;
+
+    ringCtx.lineWidth = 1.2;
+
+    ringCtx.stroke();
+  }
+
+  requestAnimationFrame(drawRings);
+}
+
+resizeRings();
+
+window.addEventListener(
+  "resize",
+  resizeRings
+);
+
+requestAnimationFrame(
+  drawRings
+);
+
+setTimeout(
+  () => intro.classList.add("hide"),
+  5000
+);
+
+
+/* =========================================================
+   CIRCULAR TEXT
+========================================================= */
+
+const circularSpinner =
+  document.getElementById(
+    "circularSpinner"
+  );
+
+const circularText =
+  "HUMAN ACTIVITY MONITOR • UNSEEN •";
+
+[...circularText].forEach(
+  (character,index) => {
+
+    const span =
+      document.createElement("span");
+
+    span.className =
+      "circular-letter";
+
+    span.textContent =
+      character === " "
+      ? "\u00a0"
+      : character;
+
+    span.style.setProperty(
+      "--angle",
+      `${index * 360 / circularText.length}deg`
+    );
+
+    circularSpinner.appendChild(span);
+  }
+);
+
+
+/* =========================================================
+   PARTICLE TEXT
+========================================================= */
+
+const pCanvas =
+  document.getElementById(
+    "particleTextCanvas"
+  );
+
+const pctx =
+  pCanvas.getContext("2d");
+
+let particles = [];
+
+let pW = 0;
+let pH = 0;
+let pDpr = 1;
+
+let pPointer = {
+  x:0,
+  y:0,
+  active:false
+};
+
+function makeParticles(){
+
+  const rect =
+    pCanvas.getBoundingClientRect();
+
+  pDpr =
+    Math.min(
+      window.devicePixelRatio || 1,
+      2
+    );
+
+  pW =
+    Math.max(
+      300,
+      rect.width
+    );
+
+  pH =
+    Math.max(
+      100,
+      rect.height
+    );
+
+  pCanvas.width =
+    pW * pDpr;
+
+  pCanvas.height =
+    pH * pDpr;
+
+  pctx.setTransform(
+    pDpr,
+    0,
+    0,
+    pDpr,
+    0,
+    0
+  );
+
+  const off =
+    document.createElement("canvas");
+
+  const o =
+    off.getContext("2d");
+
+  off.width =
+    Math.floor(pW);
+
+  off.height =
+    Math.floor(pH);
+
+  const text =
+    "HUMAN ACTIVITY MONITOR";
+
+  /*
+    IMPORTANT:
+    Dynamically reduce font size until
+    the complete text fits inside canvas.
+    This fixes the cropped "H".
+  */
+
+  let fontSize =
+    Math.min(
+      92,
+      pW * .095
+    );
+
+  const minFontSize =
+    window.innerWidth < 680
+    ? 26
+    : 40;
+
+  const maxTextWidth =
+    pW * .90;
+
+  while(fontSize > minFontSize){
+
+    o.font =
+      `800 ${fontSize}px Inter, Arial, sans-serif`;
+
+    if(
+      o.measureText(text).width
+      <= maxTextWidth
+    ){
+      break;
+    }
+
+    fontSize -= 1;
+  }
+
+  o.clearRect(
+    0,
+    0,
+    off.width,
+    off.height
+  );
+
+  o.font =
+    `800 ${fontSize}px Inter, Arial, sans-serif`;
+
+  o.textAlign =
+    "center";
+
+  o.textBaseline =
+    "middle";
+
+  o.fillStyle =
+    "#fff";
+
+  o.fillText(
+    text,
+    off.width / 2,
+    off.height / 2
+  );
+
+  const data =
+    o.getImageData(
+      0,
+      0,
+      off.width,
+      off.height
+    ).data;
+
+  const step = 4;
+
+  particles = [];
+
+  for(
+    let y = 0;
+    y < off.height;
+    y += step
+  ){
+
+    for(
+      let x = 0;
+      x < off.width;
+      x += step
+    ){
+
+      const alpha =
+        data[
+          (y * off.width + x) * 4 + 3
+        ];
+
+      if(alpha > 150){
+
+        particles.push({
+          tx:x,
+          ty:y,
+
+          x:
+            x +
+            (Math.random() - .5) * 30,
+
+          y:
+            y +
+            (Math.random() - .5) * 30,
+
+          phase:
+            Math.random() *
+            Math.PI * 2
+        });
+      }
+    }
+  }
+
+  /*
+    Limit particle count for performance.
+  */
+
+  if(particles.length > 2200){
+
+    const stride =
+      particles.length / 2200;
+
+    particles =
+      Array.from(
+        {length:2200},
+        (_,i) =>
+          particles[
+            Math.floor(i * stride)
+          ]
+      );
+  }
+}
+
+function drawParticles(time){
+
+  pctx.clearRect(
+    0,
+    0,
+    pW,
+    pH
+  );
+
+  const currentTime =
+    time * .001;
+
+  for(const p of particles){
+
+    p.x +=
+      (p.tx - p.x) * .045;
+
+    p.y +=
+      (p.ty - p.y) * .045;
+
+    let x = p.x;
+    let y = p.y;
+
+    if(pPointer.active){
+
+      const dx =
+        x - pPointer.x;
+
+      const dy =
+        y - pPointer.y;
+
+      const distance =
+        Math.sqrt(
+          dx * dx +
+          dy * dy
+        );
+
+      const radius = 120;
+
+      if(distance < radius){
+
+        const force =
+          (1 - distance / radius) * 18;
+
+        x +=
+          (dx / (distance || 1)) *
+          force;
+
+        y +=
+          (dy / (distance || 1)) *
+          force;
+      }
+    }
+
+    const drift =
+      Math.sin(
+        currentTime * .7 +
+        p.phase
+      ) * .45;
+
+    pctx.beginPath();
+
+    pctx.fillStyle =
+      "rgba(245,245,240,.92)";
+
+    pctx.arc(
+      x,
+      y + drift,
+      1.25,
+      0,
+      Math.PI * 2
+    );
+
+    pctx.fill();
+  }
+
+  requestAnimationFrame(
+    drawParticles
+  );
+}
+
+makeParticles();
+
+requestAnimationFrame(
+  drawParticles
+);
+
+window.addEventListener(
+  "resize",
+  makeParticles
+);
+
+pCanvas.addEventListener(
+  "pointermove",
+  event => {
+
+    const rect =
+      pCanvas.getBoundingClientRect();
+
+    pPointer.x =
+      event.clientX -
+      rect.left;
+
+    pPointer.y =
+      event.clientY -
+      rect.top;
+
+    pPointer.active = true;
+  }
+);
+
+pCanvas.addEventListener(
+  "pointerleave",
+  () => {
+    pPointer.active = false;
+  }
+);
+
+
+/* =========================================================
+   DEPTH CARDS
+========================================================= */
+
+document
+  .querySelectorAll("[data-depth]")
+  .forEach(card => {
+
+    card.addEventListener(
+      "pointermove",
+      event => {
+
+        const rect =
+          card.getBoundingClientRect();
+
+        const x =
+          (event.clientX - rect.left) /
+          rect.width - .5;
+
+        const y =
+          (event.clientY - rect.top) /
+          rect.height - .5;
+
+        card.style.transform =
+          `
+          perspective(900px)
+          rotateX(${-y * 4}deg)
+          rotateY(${x * 4}deg)
+          translateZ(4px)
+          `;
+
+        card.style.setProperty(
+          "--mx",
+          `${(x + .5) * 100}%`
+        );
+
+        card.style.setProperty(
+          "--my",
+          `${(y + .5) * 100}%`
+        );
+      }
+    );
+
+    card.addEventListener(
+      "pointerleave",
+      () => {
+
+        card.style.transform =
+          `
+          perspective(900px)
+          rotateX(0)
+          rotateY(0)
+          translateZ(0)
+          `;
+      }
+    );
+  });
+
+
+/* =========================================================
+   MONITORING SCENARIO
+========================================================= */
+
+const scenarioData = {
+
+  general:{
+    title:"General Monitoring",
+    description:
+      "General-purpose presence and activity monitoring using WiFi CSI."
+  },
+
+  presence:{
+    title:"Presence Detection",
+    description:
+      "Focuses on detecting whether a human is present in the sensing area."
+  },
+
+  activity:{
+    title:"Activity Monitoring",
+    description:
+      "Focuses on estimating the current human motion or activity state."
+  },
+
+  demo:{
+    title:"Demo / Replay",
+    description:
+      "Demo mode for replaying sample sensing data during the hackathon presentation."
+  }
+
+};
+
+const scenarioTitle =
+  document.getElementById(
+    "scenarioTitle"
+  );
+
+const scenarioDescription =
+  document.getElementById(
+    "scenarioDescription"
+  );
+
+document
+  .querySelectorAll(".scenario-option")
+  .forEach(button => {
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        document
+          .querySelectorAll(
+            ".scenario-option"
+          )
+          .forEach(btn =>
+            btn.classList.remove(
+              "active"
+            )
+          );
+
+        button.classList.add(
+          "active"
+        );
+
+        const selected =
+          scenarioData[
+            button.dataset.scenario
+          ];
+
+        if(!selected) return;
+
+        scenarioTitle.textContent =
+          selected.title;
+
+        scenarioDescription.textContent =
+          selected.description;
+      }
+    );
+  });
+
+
+/* =========================================================
+   REAL BACKEND MONITORING DATA
+========================================================= */
+
+const presenceValue =
+  document.getElementById(
+    "presenceValue"
+  );
+
+const presenceDescription =
+  document.getElementById(
+    "presenceDescription"
+  );
+
+const activityValue =
+  document.getElementById(
+    "activityValue"
+  );
+
+const confidenceValue =
+  document.getElementById(
+    "confidenceValue"
+  );
+
+
+const ws =
+  new WebSocket(
+    "ws://127.0.0.1:8000/ws"
+  );
+
+
+ws.onopen = () => {
+
+  console.log(
+    "Connected to WiFi CSI backend"
+  );
+
+};
+
+
+ws.onmessage = event => {
+
+  const data =
+    JSON.parse(event.data);
+
+  console.log(
+    "Backend data:",
+    data
+  );
+
+
+  /* -------------------------
+     Presence
+  ------------------------- */
+
+  presenceValue.textContent =
+    data.presence
+    ? "Detected"
+    : "Not Detected";
+
+
+  presenceDescription.textContent =
+    data.presence
+    ? "Motion detected in sensing area."
+    : "No significant motion detected.";
+
+
+  /* -------------------------
+     Activity
+  ------------------------- */
+  const activityNames = {
+  box: "Boxing",
+  circle: "Circling Arms",
+  clean: "Cleaning",
+  fall: "Falling",
+  run: "Running",
+  walk: "Walking"
+};
+
+activityValue.textContent =
+  data.presence
+  ? (activityNames[data.activity] || data.activity || "None")
+  : "None";
+
+  /* -------------------------
+     Confidence
+  ------------------------- */
+
+  let confidence =
+    Number(data.confidence);
+
+  if(confidence <= 1){
+    confidence *= 100;
+  }
+
+  confidenceValue.textContent =
+  confidence.toFixed(2) + "%";
+  updateChart(data.motion_score);
+
+};
+
+
+ws.onerror = error => {
+
+  console.error(
+    "WebSocket error:",
+    error
+  );
+
+};
+
+
+ws.onclose = () => {
+
+  console.log(
+    "Disconnected from WiFi CSI backend"
+  );
+
+};
+
+
+/* =========================================================
+   CSI CHART
+========================================================= */
+
+const labels = [];
+const signalData = [];
+
+const csiCanvas =
+  document.getElementById(
+    "csiChart"
+  );
+
+const csiChart =
+  new Chart(
+    csiCanvas.getContext("2d"),
+    {
+      type:"line",
+
+      data:{
+        labels:labels,
+
+        datasets:[
+          {
+            label:"Motion Score",
+
+            data:signalData,
+
+            borderColor:"#C5BCAA",
+
+            borderWidth:1.6,
+
+            tension:.35,
+
+            pointRadius:0,
+
+            fill:false
+          }
+        ]
+      },
+
+      options:{
+        responsive:true,
+
+        maintainAspectRatio:false,
+
+        animation:false,
+
+        plugins:{
+          legend:{
+            display:false
+          }
+        },
+
+        scales:{
+
+          x:{
+            ticks:{
+              color:"#9B8E89",
+              maxTicksLimit:8
+            },
+
+            grid:{
+              color:
+                "rgba(197,188,170,.08)"
+            }
+          },
+
+          y:{
+            ticks:{
+              color:"#9B8E89"
+            },
+
+            grid:{
+              color:
+                "rgba(197,188,170,.08)"
+            }
+          }
+        }
+      }
+    }
+  );
+
+function updateChart(motionScore){
+  labels.push(
+    new Date().toLocaleTimeString()
+  );
+
+  signalData.push(motionScore);
+
+  if(labels.length > 28){
+    labels.shift();
+    signalData.shift();
+  }
+
+  csiChart.update();
+}
+
+
+
+/* =========================================================
+   BACKEND WEBSOCKET HOOK
+   Person 3 can enable this later.
+========================================================= */
+
+
+
+</script>
+
+</body>
+</html>
