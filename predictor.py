@@ -1,26 +1,6 @@
-import torch
 import numpy as np
 from scipy.io import loadmat
-from NTU_Fi_model import NTU_Fi_ResNet18
-
-
-# --------------------------------------------------
-# Load model
-# --------------------------------------------------
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-model = NTU_Fi_ResNet18(num_classes=6)
-
-checkpoint = torch.load(
-    "NTU-Fi-HAR_ResNet18.pt",
-    map_location="cpu",
-    weights_only=False
-)
-
-model.load_state_dict(checkpoint)
-model.eval()
-model = model.to(device)
+import onnxruntime as ort
 
 
 model_classes = [
@@ -32,32 +12,24 @@ model_classes = [
     "fall"
 ]
 
-
-# --------------------------------------------------
-# Presence / motion gate
-# --------------------------------------------------
-
 MOTION_THRESHOLD = 0.10
+
+session = ort.InferenceSession(
+    "NTU-Fi-HAR_ResNet18.onnx",
+    providers=["CPUExecutionProvider"]
+)
 
 
 def presence_gate(raw_csi):
-    # Official NTU-Fi preprocessing
     processed = (raw_csi - 42.3199) / 4.9802
     processed = processed[:, ::4]
     processed = processed.reshape(3, 114, 500)
 
-    # Variance-based motion score
     motion_score = np.var(processed, axis=2).mean()
-
-    # Presence/motion decision
     detected = motion_score >= MOTION_THRESHOLD
 
     return detected, motion_score, processed
 
-
-# --------------------------------------------------
-# Full CSI prediction
-# --------------------------------------------------
 
 def predict_csi(raw_csi):
     detected, motion_score, processed = presence_gate(raw_csi)
@@ -70,30 +42,31 @@ def predict_csi(raw_csi):
             "motion_score": float(motion_score)
         }
 
-    input_tensor = torch.FloatTensor(processed)
-    input_tensor = input_tensor.unsqueeze(0).to(device)
+    input_tensor = processed.astype(np.float32)
+    input_tensor = np.expand_dims(input_tensor, axis=0)
 
-    with torch.no_grad():
-        output = model(input_tensor)
+    output = session.run(
+        None,
+        {"input": input_tensor}
+    )[0]
 
-    probabilities = torch.softmax(output, dim=1)
+    scores = output[0]
 
-    predicted_index = torch.argmax(probabilities, dim=1).item()
-    confidence = probabilities[0, predicted_index].item()
+    exp_scores = np.exp(scores - np.max(scores))
+    probabilities = exp_scores / exp_scores.sum()
+
+    predicted_index = int(np.argmax(probabilities))
+    confidence = float(probabilities[predicted_index])
 
     activity = model_classes[predicted_index]
 
     return {
         "presence": True,
         "activity": activity,
-        "confidence": float(confidence),
+        "confidence": confidence,
         "motion_score": float(motion_score)
     }
 
-
-# --------------------------------------------------
-# Six real test samples for replay
-# --------------------------------------------------
 
 SAMPLE_PATHS = [
     "six_test_samples/box/box186.mat",
@@ -107,15 +80,10 @@ SAMPLE_PATHS = [
 sample_index = 0
 
 
-# --------------------------------------------------
-# Backend prediction
-# --------------------------------------------------
-
 def get_prediction():
     global sample_index
 
     path = SAMPLE_PATHS[sample_index]
-
     sample_index = (sample_index + 1) % len(SAMPLE_PATHS)
 
     raw_csi = loadmat(path)["CSIamp"]

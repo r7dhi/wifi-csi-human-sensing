@@ -3,6 +3,4 @@ uvicorn
 websockets
 numpy
 scipy
-torch
-torchvision
-einops
+onnxruntime
